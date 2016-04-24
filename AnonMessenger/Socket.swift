@@ -8,20 +8,34 @@
 
 import Foundation
 
-protocol SocketDelegate
+protocol SocketMessageReceiverDelegate
 {
-    func didReceiveMessage(message:String)
-    func didHaveError(message:String)
+    func didReceiveMessage(message:String, senderName: String)
+}
+
+protocol SocketMessageSenderDelegate
+{
+    func didHaveError(message:String, receiverName: String)
+}
+
+protocol SocketUserDelegate
+{
+    func didAddUser(username:String)
+    func didRemoveUser(username:String)
 }
 
 class Socket: NSObject, NSStreamDelegate
 {
     static let sharedInstance = Socket()
-    var delegate: SocketDelegate!
+    
+    var messageReceiverDelegate: SocketMessageReceiverDelegate!
+    var messageSenderDelegate: SocketMessageSenderDelegate!
+    var userDelegate: SocketUserDelegate!
+    
     private override init() { super.init() }
     
-    private let serverAddress: CFString = "127.0.0.1"
-    private let serverPort: UInt32 = 80
+    let serverAddress: CFString = "127.0.0.1"
+    let serverPort: UInt32 = 80
     
     private var inputStream: NSInputStream!
     private var outputStream: NSOutputStream!
@@ -53,38 +67,38 @@ class Socket: NSObject, NSStreamDelegate
         self.outputStream.open()
     }
     
-    func login(username: String) -> Bool
+    func login(username: String, completionHandler: Bool -> Void)
     {
-        let loginInfo: String = "iam:"+username
-        if let data = loginInfo.dataUsingEncoding(NSASCIIStringEncoding)
+        let loginData = ["type":"login", "username":username]
+        do
         {
+            let data = try NSJSONSerialization.dataWithJSONObject(loginData, options: NSJSONWritingOptions.PrettyPrinted)
             let success = outputStream.write(UnsafePointer(data.bytes), maxLength: data.length)
-            
             // fail check 
-            if (success == -1)
-            {
-                return false
-            }
+            completionHandler(success != -1)
         }
-        
-        return true
+        catch
+        {
+            print("Couldn't convert login data to JSON")
+            completionHandler(false)
+        }
     }
     
-    func sendMessage(message: String) -> Bool
+    func sendMessage(message: String, receiver: String, completionHandler: (Bool, String) -> Void)
     {
-        let messageInfo: String = "msg:"+message
-        if let data = messageInfo.dataUsingEncoding(NSASCIIStringEncoding)
+        let messageData = ["type":"message", "message":message, "receiver":receiver]
+        do
         {
+            let data = try NSJSONSerialization.dataWithJSONObject(messageData, options: NSJSONWritingOptions.PrettyPrinted)
             let success = outputStream.write(UnsafePointer(data.bytes), maxLength: data.length)
-            
-            // fail check
-            if success == -1
-            {
-                return false
-            }
+            completionHandler(success != -1, message)
+        }
+        catch
+        {
+            print ("Couldn't convert message data to JSON")
+            completionHandler(false, message)
         }
         
-        return true
     }
     
     internal func stream(aStream: NSStream, handleEvent eventCode: NSStreamEvent) {
@@ -111,25 +125,25 @@ class Socket: NSObject, NSStreamDelegate
     {
         if stream == inputStream
         {
-            let bufferSize = 1024
-            var buffer = Array<UInt8>(count:bufferSize, repeatedValue: 0)
-            var bytesRead: Int
-            
-            while inputStream.hasBytesAvailable
+            do
             {
-                bytesRead = inputStream.read(&buffer, maxLength: bufferSize)
-                if (bytesRead > 0)
+                let inputDict = try NSJSONSerialization.JSONObjectWithStream(inputStream, options: NSJSONReadingOptions.MutableContainers)
+                if inputDict["type"] == "client_add"
                 {
-                    let output = NSString(bytes: &buffer, length: bytesRead, encoding: NSUTF8StringEncoding)
-                    if output != nil
-                    {
-                        delegate.didReceiveMessage(output as! String)
-                    }
+                    self.userDelegate.didAddUser(inputDict["username"])
+                }
+                else if inputDict["type"] = "client_remove"
+                {
+                    self.userDelegate.didRemoveUser(inputDict["username"])
                 }
                 else
                 {
-                    print("Oops, no message received")
+                    self.messageReceiverDelegate.didReceiveMessage(inputDict["message"], inputDict["username"])
                 }
+            }
+            catch
+            {
+                print("Couldn't parse incoming dictionary")
             }
         }
     }
@@ -138,13 +152,19 @@ class Socket: NSObject, NSStreamDelegate
     {
         if stream == outputStream
         {
+   
             if let error = outputStream.streamError, messageData = outputStream.valueForKey(NSStreamDataWrittenToMemoryStreamKey) as? NSData
             {
                 print("Couldn't send message: %@", error)
                 
-                if let message = String(data: messageData, encoding: NSASCIIStringEncoding)
+                do
                 {
-                    delegate.didHaveError(message)
+                    let json = try NSJSONSerialization.JSONObjectWithData(messageData, options: NSJSONReadingOptions.MutableContainers)
+                    self.messageSenderDelegate.didHaveError(json["message"], receiverName: json["receiver"])
+                }
+                catch
+                {
+                    print("Couldn't parse json from sending error")
                 }
             }
         }

@@ -18,6 +18,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         self.window = UIWindow.init(frame: UIScreen.mainScreen().bounds)
         self.window?.makeKeyWindow()
+        
+        Socket.sharedInstance.connect(Socket.sharedInstance.serverAddress, port: Socket.sharedInstance.serverPort)
 
         let homeVC = HomeViewController()
         let homeNavigationController = UINavigationController(rootViewController: homeVC)

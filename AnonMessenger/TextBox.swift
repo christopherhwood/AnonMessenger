@@ -32,6 +32,7 @@ class TextBox: UIView
         
         self.textView = UITextView(frame: CGRect(x: PADDING, y: PADDING, width: self.bounds.width-2*PADDING, height: self.bounds.height-2*PADDING))
         self.textView.delegate = self.delegate
+        self.textView.returnKeyType = UIReturnKeyType.Send
         self.addSubview(self.textView)
     }
 }

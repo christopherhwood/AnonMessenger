@@ -9,15 +9,15 @@
 struct ChatModel
 {
     var sender: String!
-//    var time: String!
     var message: String!
+    var read: Bool!
     var success: Bool!
     
-    init(sender: String, time: String, message: String)
+    init(sender: String, message: String, read: Bool = false)
     {
         self.sender = sender
-//        self.time = time
         self.message = message
-        self.success = sender != "Me"
+        self.read = read
+        self.success = true
     }
 }

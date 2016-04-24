@@ -10,30 +10,39 @@ import UIKit
 
 class PeepCell: UITableViewCell
 {
-    let nameLabel: UILabel!
-    let bioLabel: UILabel!
-    
-    var peep: UserModel! {
-        get {
-            return self.peep
-        }
-        set {
-            self.nameLabel.text = newValue.username
-            self.bioLabel.text = newValue.bio == nil ? "" : newValue.bio
-        }
-    }
+    var peep: UserModel!
+    private var nameLabel: UILabel!
+    private var redCircle: UIView!
     
     override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
-        nameLabel = UILabel(frame: CGRect(x: 10, y: 50, width: 150, height: 50))
-        bioLabel = UILabel(frame: CGRect(x: 160, y: 10, width: self.contentView.bounds.width-150, height: 130))
+        nameLabel = UILabel()
+        nameLabel.font = UIFont.systemFontOfSize(16)
+        redCircle = UIView()
+        redCircle.layer.cornerRadius = 15
+        redCircle.backgroundColor = UIColor.redColor()
+        redCircle.layer.masksToBounds = true
+        redCircle.hidden = true
         
-        nameLabel.font = UIFont.systemFontOfSize(20)
-        bioLabel.font = UIFont.systemFontOfSize(10)
+        self.contentView.addSubview(nameLabel)
+        self.contentView.addSubview(redCircle)
     }
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
+    }
+    
+    override func setSelected(selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        
+        self.nameLabel = UILabel(frame: CGRect(x: 10, y: 50, width: 150, height: 50))
+        self.nameLabel.text = self.peep.name
+        
+        redCircle.frame = CGRect(x: contentView.bounds.width-60, y: 5, width: 40, height: 40)
+        if self.peep.unreadMessages > 0
+        {
+            redCircle.hidden = false
+        }
     }
 }

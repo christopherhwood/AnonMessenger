@@ -19,7 +19,6 @@ class ChatCell: UITableViewCell
     var delegate: ChatCellDelegate!
     private var bgView: UIView!
     private var userNameLabel: UILabel!
-//    private var dateLabel: UILabel!
     private var messageView: UITextView!
     private var resendButton: UIButton!
     
@@ -33,20 +32,21 @@ class ChatCell: UITableViewCell
         self.bgView = UIView()
         bgView.layer.borderColor = UIColor.darkGrayColor().CGColor
         bgView.layer.borderWidth = 1
+        bgView.layer.cornerRadius = 6
+        bgView.layer.masksToBounds = true
         self.userNameLabel = UILabel()
-//        self.dateLabel = UILabel()
         self.messageView = UITextView()
         self.messageView.editable = false
         self.resendButton = UIButton()
         self.resendButton.backgroundColor = UIColor.redColor()
         self.resendButton.layer.cornerRadius = 20
+        self.resendButton.layer.masksToBounds = true
         self.resendButton.setTitle("!", forState: UIControlState.Normal)
         self.resendButton.addTarget(self, action: #selector(ChatCell.didResend), forControlEvents: UIControlEvents.TouchUpInside)
         self.resendButton.hidden = true
         
         self.contentView.addSubview(bgView)
         self.contentView.addSubview(userNameLabel)
-//        self.contentView.addSubview(dateLabel)
         self.contentView.addSubview(messageView)
         self.contentView.addSubview(resendButton)
     }
@@ -58,16 +58,13 @@ class ChatCell: UITableViewCell
     override func setSelected(selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
         
-        self.bgView.frame = CGRect(x: PADDING, y: PADDING, width: MESSAGE_BUBBLE_WIDTH, height: self.contentView.bounds.height-2*PADDING)
+        self.bgView.frame = CGRect(x: chat.sender == "Me" ? contentView.bounds.width-MESSAGE_BUBBLE_WIDTH-PADDING : PADDING, y: PADDING, width: MESSAGE_BUBBLE_WIDTH, height: self.contentView.bounds.height-2*PADDING)
         self.userNameLabel.frame = CGRect(x: PADDING/2, y: PADDING/2, width: (bgView.bounds.width-PADDING)/2, height: TOP_BAR_HEIGHT)
-//        self.dateLabel.frame = CGRect(x: userNameLabel.frame.maxX, y: PADDING/2, width: (bgView.bounds.width-PADDING)/2, height: TOP_BAR_HEIGHT)
         self.messageView.frame = CGRect(x: PADDING/2, y: TOP_BAR_HEIGHT+PADDING/2, width: bgView.bounds.width-PADDING, height: bgView.bounds.height-3*PADDING/2-TOP_BAR_HEIGHT)
+        self.resendButton.frame = CGRect(x: chat.sender == "Me" ? bgView.frame.minX - PADDING : bgView.frame.maxX + PADDING, y: bgView.frame.midX, width: 40, height: 40)
         
         userNameLabel.text = chat.sender
         userNameLabel.font = UIFont.systemFontOfSize(10)
-        
-//        dateLabel.text = chat.time
-//        dateLabel.font = UIFont.systemFontOfSize(10)
         
         messageView.text = chat.message
         messageView.font = UIFont.systemFontOfSize(12)
